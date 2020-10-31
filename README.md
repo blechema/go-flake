@@ -1,4 +1,4 @@
-Sonyflake
+GoFlake
 =========
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/blechema/go-flake)](https://goreportcard.com/report/github.com/blechema/go-flake)
