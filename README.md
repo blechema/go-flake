@@ -6,9 +6,9 @@ Sonyflake
 
 GoFlake is a distributed unique 63 bit ID generator inspired by [SONY's Sonyflake](https://github.com/sony/sonyflake) witch is inspired by [Twitter's Snowflake](https://blog.twitter.com/2010/announcing-snowflake).  
 
-Main Goal is to generate unique Ids with a hash like distribution to prevent enumeration attacks.
+Main Goal is generating unique Ids with a hash like distribution to prevent enumeration attacks.
 
-* Guaranties uniqueness of generated ID over a time span of 146 years.
+* Guarantees uniqueness of generated ID over a time span of 146 years.
 * 8 bit of randomness and a shuffled bit sequence generating hash like ID sequences.
 * Generating of a new ID is thread save and will never block.
 * Optional raw ID which are sortable like Snowflake is (but without a hash like character).
