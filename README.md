@@ -50,7 +50,7 @@ The function `Next()` generates a new unique ID utilizing the Default generator 
 func Next() Flake
 ```
 
-The function `Raw()` generates a raw ID as int64 utilizing the Default generator singleton.
+The function `NextRaw()` generates a raw ID as int64 utilizing the Default generator singleton.
 
 ```go
 func NextRaw() int64
