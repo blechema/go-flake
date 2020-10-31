@@ -1,8 +1,8 @@
 Sonyflake
 =========
 
-[!-[Coverage Status](https://coveralls.io/repos/blechema/go-flake/badge.svg?branch=master&service=github)](https://coveralls.io/github/blechema/go-flake?branch=main)
-[!-[Go Report Card](https://goreportcard.com/badge/github.com/blechema/go-flake)](https://goreportcard.com/report/github.com/blechema/go-flake)
+[![Coverage Status](https://coveralls.io/repos/blechema/go-flake/badge.svg?branch=master&service=github)](https://coveralls.io/github/blechema/go-flake?branch=main)
+[![Go Report Card](https://goreportcard.com/badge/github.com/blechema/go-flake)](https://goreportcard.com/report/github.com/blechema/go-flake)
 
 GoFlake is a distributed unique 63 bit ID generator inspired by [SONY's Sonyflake](https://github.com/sony/sonyflake) witch is inspired by [Twitter's Snowflake](https://blog.twitter.com/2010/announcing-snowflake).  
 
