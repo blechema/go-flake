@@ -58,7 +58,7 @@ func TestSequencing(t *testing.T) {
 	generate(t, Default, make(map[Flake]int), 1000000)
 }
 
-func TestEncodeDecode(t *testing.T) {
+func TestEncode(t *testing.T) {
 	in := Next()
 	if out := in.Int64(); out != int64(in) {
 		t.Errorf("Decoding of int64 value failed for input %d with output %d", in, out)
@@ -78,6 +78,9 @@ func TestEncodeDecode(t *testing.T) {
 	if out, err := FromBytes(in.Bytes()); err != nil || out != in {
 		t.Errorf("Decoding of bytes value failed for input %d with output %d: %v", in, out, err)
 	}
+}
+
+func TestDecode(t *testing.T) {
 	if _, err := Decode(""); err == nil { // unknown format
 		t.Errorf("Decoding of string '' failed. No error!")
 	}

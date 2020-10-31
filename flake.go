@@ -12,8 +12,10 @@ import (
 	"time"
 )
 
+// Flake represents a unique 63 bit ID.
 type Flake int64
 
+// Flaker is the generator interface.
 type Flaker interface {
 	Next() Flake
 	NextRaw() int64
@@ -45,9 +47,9 @@ const (
 
 var base32RawEncoding = base32.HexEncoding.WithPadding(base32.NoPadding)
 
-// The default singleton of Flaker with sets the lower 8 bits of the first
-// non loopback IPv4 address (zero if not available) as machine-id and
-// the 1/1/2020 as epoch start (epoch is only needed for sortable IDs).
+// Default is the default singleton of Flaker with sets the lower 8 bits of
+// the first non loopback IPv4 address (zero if not available) as machine-id
+// and the 1/1/2020 as epoch start (epoch is only needed for sortable IDs).
 var Default = Flaker(&flaker{
 	mutex:      &sync.Mutex{},
 	machineId:  byte(getLocalIPv4() & machineIdMask),
@@ -56,21 +58,22 @@ var Default = Flaker(&flaker{
 
 // ----------------------------------------------------------------------------
 
-// Shorthand for Default.Next()
+// Next is a shorthand for Default.Next()
 func Next() Flake {
 	return Default.Next()
 }
 
-// Shorthand for Default.NextRaw()
+// NextRaw is a shorthand for Default.NextRaw()
 func NextRaw() int64 {
 	return Default.NextRaw()
 }
 
-// Shorthand for Default.WithMachineId(machineId)
+// WithMachineId is a shorthand for Default.WithMachineId(machineId)
 func WithMachineId(machineId byte) Flaker {
 	return Default.WithMachineId(machineId)
 }
 
+// WithEpochStart is a shorthand for Default.WithEpochStart(time)
 func WithEpochStart(time time.Time) Flaker {
 	return Default.WithEpochStart(time)
 }
@@ -160,39 +163,39 @@ func (g flaker) WithEpochStart(time time.Time) Flaker {
 
 // ----------------------------------------------------------------------------
 
-// Returns the flak as 8 bytes
+// Bytes returns the flak as 8 bytes
 func (f Flake) Bytes() []byte {
 	uid := make([]byte, 8, 8)
 	binary.BigEndian.PutUint64(uid, uint64(f))
 	return uid
 }
 
-// Returns the flak as raw int64
+// Int64 returns the flak as raw int64
 func (f Flake) Int64() int64 {
 	return int64(f)
 }
 
-// Returns the flak as raw uint64
+// Uint64 returns the flak as raw uint64
 func (f Flake) Uint64() uint64 {
 	return uint64(f)
 }
 
-// Encodes the flake to hex
+// Hex encodes the flake to hex
 func (f Flake) Hex() string {
 	return hex.EncodeToString(f.Bytes())
 }
 
-// Encodes the flake to base64
+// Base64 encodes the flake to base64
 func (f Flake) Base64() string {
 	return base64.RawURLEncoding.EncodeToString(f.Bytes())
 }
 
-// Encodes the flake to base32
+// Base32 encodes the flake to base32
 func (f Flake) Base32() string {
 	return base32RawEncoding.EncodeToString(f.Bytes())
 }
 
-// Decodes a 8 bit flake instance from bytes
+// FromBytes decodes a 8 bit flake instance from bytes
 func FromBytes(b []byte) (flake Flake, err error) {
 	if len(b) != 8 {
 		return 0, errors.New("unknown format")
@@ -201,7 +204,7 @@ func FromBytes(b []byte) (flake Flake, err error) {
 	return
 }
 
-// Decodes a hex, base32 or base64 encoded flake
+// Decode decodes a hex, base32 or base64 encoded flake
 func Decode(s string) (flake Flake, err error) {
 	var b []byte
 	switch len(s) {
