@@ -1,7 +1,7 @@
 GoFlake
 =========
 
-[!-[Go Report Card](https://goreportcard.com/badge/github.com/blechema/go-flake?)](https://goreportcard.com/report/github.com/blechema/go-flake)
+[![Go Report Card](https://goreportcard.com/badge/github.com/blechema/go-flake?)](https://goreportcard.com/report/github.com/blechema/go-flake)
 
 GoFlake is a distributed unique 63 bit ID generator inspired by [SONY's Sonyflake](https://github.com/sony/sonyflake) witch is inspired by [Twitter's Snowflake](https://blog.twitter.com/2010/announcing-snowflake).  
 
