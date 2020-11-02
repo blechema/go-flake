@@ -18,7 +18,6 @@ type Flake int64
 // Flaker is the generator interface.
 type Flaker interface {
 	Next() Flake
-	NextRaw() int64
 	WithMachineId(machineId byte) Flaker
 	WithEpochStart(time time.Time) Flaker
 }
@@ -27,22 +26,21 @@ type Flaker interface {
 
 type flaker struct {
 	mutex           *sync.Mutex
+	raw             bool
 	machineId       byte
 	epochStart      int64
-	sequence        int64
+	sequence        int32
 	currentInterval int64
-	runner          byte
 }
 
+// [interval(4byte)][sequence/random(3byte)][machine(1byte)]
 const (
-	timeIntervalBits    = 39
-	sequenceCounterBits = 8
-	machineIdBits       = 8
-	randomBits          = 8
-	ignoredTimeBits     = 23
-	timeIntervalMask    = (1 << timeIntervalBits) - 1
-	machineIdMask       = (1 << machineIdBits) - 1
-	randomMask          = (1 << randomBits) - 1
+	intervalBits    = 32
+	sequenceBits    = 23
+	machineIdBits   = 8
+	ignoredTimeBits = 30
+	intervalMask    = (1 << intervalBits) - 1
+	machineIdMask   = (1 << machineIdBits) - 1
 )
 
 var base32RawEncoding = base32.HexEncoding.WithPadding(base32.NoPadding)
@@ -56,6 +54,13 @@ var Default = Flaker(&flaker{
 	epochStart: 1577833200000000000, // 1/1/2020
 })
 
+var Raw = Flaker(&flaker{
+	raw:        true,
+	mutex:      &sync.Mutex{},
+	machineId:  byte(getLocalIPv4() & machineIdMask),
+	epochStart: 1577833200000000000, // 1/1/2020
+})
+
 // ----------------------------------------------------------------------------
 
 // Next is a shorthand for Default.Next()
@@ -63,9 +68,9 @@ func Next() Flake {
 	return Default.Next()
 }
 
-// NextRaw is a shorthand for Default.NextRaw()
-func NextRaw() int64 {
-	return Default.NextRaw()
+// NextRaw is a shorthand for Raw.Next()
+func NextRaw() Flake {
+	return Raw.Next()
 }
 
 // WithMachineId is a shorthand for Default.WithMachineId(machineId)
@@ -83,13 +88,16 @@ func WithEpochStart(time time.Time) Flaker {
 // Returns a new unique ID in shuffled bits flake-format. Flake derives
 // actually from an int64 so you can convert with int64(flake). The IDs will
 // be guarantied unique within a 146 years time span. It can generate up to
-// 256 IDs each 8.5 ms but its save to generate much more when stick to a
-// cool down time of GENERATED_IDS * 8.5 / 256 ms between program restarts
-// (or between creating new Flaker instances - with will not be a good
-// practice anyhow). Generating a new ID is thread save and will never block.
+// 4,000,000 IDs each second but its save to generate unlimited more when stick
+// to a cool down time of GENERATED_IDS / 4,000,000 s between program restarts.
+// Generating a new ID is thread save and will never block.
 func (g *flaker) Next() Flake {
 
-	raw := g.NextRaw()
+	raw := g.next()
+
+	if g.raw {
+		return Flake(raw)
+	}
 
 	// Shuffle bits
 	uid := make([]byte, 8, 8)
@@ -102,39 +110,41 @@ func (g *flaker) Next() Flake {
 	return Flake(binary.LittleEndian.Uint64(uid))
 }
 
-// Returns a raw unique ID generated from the flake algorithm but without
+// next returns a raw unique ID generated from the flake algorithm but without
 // shuffled bits. This representation of a unique ID is sortable and
 // will increasing until end of flake epoch (2116-02-21) when the
 // sequence will start again. No matter that the IDs will be guarantied
 // unique within a 146 years time span. Generating a new ID is thread save
 // and will never block.
-func (g *flaker) NextRaw() int64 {
+func (g *flaker) next() int64 {
 
-	// 39 bit time interval with nano-time >> 23 (~8ms) clock loops after reaching end of epoch each ~ 150 years
-	interval := ((time.Now().UnixNano() + g.epochStart) >> ignoredTimeBits) & timeIntervalMask
+	// 32 bit time interval with nano-time >> 20 (~1s) clock loops after reaching end of epoch each ~ 146 years
+	interval := ((time.Now().UnixNano() - g.epochStart) >> ignoredTimeBits) & intervalMask
 
-	// 8 bit counter
+	// 23 bit sequence and random
+	sequence := int32(0)
 	g.mutex.Lock()
-	g.runner++
-	loop := g.sequence >> sequenceCounterBits
-	if interval-loop <= g.currentInterval {
+	loop := (g.sequence + 0x400000 - 0x2020) >> sequenceBits // 4194304 - 8224 = 4186080
+	if interval-int64(loop) <= g.currentInterval {
 		g.sequence++
+		if g.sequence < 0x20 {
+			// Small counter and 2 random bytes
+			sequence = (g.sequence << 16) | (randomByte() << 8) | randomByte()
+		} else if g.sequence < 0x2020 {
+			// Enlarge the counter
+			sequence = (0x200000 - 0x2000 + (g.sequence << 8)) | randomByte()
+		} else {
+			// Use all space for the counter
+			sequence = 0x400000 - 0x2020 + g.sequence
+		}
 	} else {
 		g.currentInterval = interval
-		g.sequence = 0
+		g.sequence = int32(0)
 	}
-	sequence := (loop << 8) + int64(g.runner)
 	g.mutex.Unlock()
 
-	// 8 bit of randomness
-	b := make([]byte, 1, 1)
-	_, _ = rand.Read(b)
-	random := int64(b[0]) & randomMask
-
-	// Build 63 bit raw result => [interval][sequence][random][machine]
 	raw := interval
-	raw = (raw << sequenceCounterBits) + sequence // + to increment the interval too on rollover
-	raw = (raw << randomBits) | random
+	raw = (raw << sequenceBits) + int64(sequence) // + to increment the interval too on rollover
 	raw = (raw << machineIdBits) | int64(g.machineId)
 
 	return raw
@@ -224,6 +234,12 @@ func Decode(s string) (flake Flake, err error) {
 }
 
 // ----------------------------------------------------------------------------
+
+func randomByte() int32 {
+	b := make([]byte, 1, 1)
+	_, _ = rand.Read(b)
+	return int32(b[0])
+}
 
 func getLocalIPv4() (ip4 uint32) {
 	addrs, _ := net.InterfaceAddrs()

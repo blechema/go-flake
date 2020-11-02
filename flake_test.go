@@ -9,9 +9,9 @@ import (
 
 func Test_Demo(t *testing.T) {
 	fmt.Printf("Sequence: %d bit, Clock: %.2f ms, Epoch: %.2f years (%s)\n",
-		timeIntervalBits, float64((time.Duration(1)<<ignoredTimeBits).Microseconds())/float64(1000),
-		(time.Duration(1)<<(ignoredTimeBits+timeIntervalBits)).Hours()/24/365,
-		time.Unix(0, 0).Add(time.Duration(1)<<(ignoredTimeBits+timeIntervalBits)))
+		intervalBits, float64((time.Duration(1)<<ignoredTimeBits).Microseconds())/float64(1000),
+		(time.Duration(1)<<(ignoredTimeBits+intervalBits)).Hours()/24/365,
+		time.Unix(0, 0).Add(time.Duration(1)<<(ignoredTimeBits+intervalBits)))
 
 	fmt.Println("--- Shuffled IDs ---")
 	for i := int64(0); i < 4; i++ {
@@ -22,7 +22,7 @@ func Test_Demo(t *testing.T) {
 
 	fmt.Println("--- NextRaw IDs ---")
 	for i := int64(0); i < 4; i++ {
-		id := Flake(NextRaw())
+		id := NextRaw()
 		fmt.Println(id.Base64(), id.Base32(), id.Hex(), id)
 	}
 }
@@ -55,7 +55,7 @@ func TestWithEpochStart(t *testing.T) {
 
 // This test generates 1,000,000 IDs and check for uniqueness
 func TestSequencing(t *testing.T) {
-	generate(t, Default, make(map[Flake]int), 1000000)
+	generate(t, Default, make(map[Flake]int), 5000000)
 }
 
 func TestEncode(t *testing.T) {
