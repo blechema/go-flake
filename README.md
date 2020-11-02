@@ -9,6 +9,7 @@ Main Goal is generating unique Ids with a hash like distribution to prevent enum
 
 * Guarantees uniqueness of generated IDs over a time span of 146 years.
 * 16 bit of randomness and a shuffled bit sequence generating hash like ID sequences.
+* Supports 256 different machines
 * Generating of a new ID is thread save and will never block.
 * Optional raw ID which are sortable like Snowflake is (but with less hash like character).
 * Build in encoding and decoding to and from hex, base32 and base64
@@ -21,6 +22,7 @@ A Flake ID is composed of
 * 4 bytes of time
 * 1 byte sequence counter  
 * 2 random bytes
+* 1 byte machine id
 
 The amount of random bytes will decrease to 1 byte when more than 64 Ids generated within a timespan of one second.
 The random bytes will turn off when more than 8,224 Ids generated within a timespan of one second.
